@@ -28,7 +28,7 @@ const CROP_HEALTH_API_URL = "https://crop.kindwise.com/api/v1/identification";
 const CROP_HEALTH_API_KEY = process.env.CROP_HEALTH_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const SERVICE_ACCOUNT_KEY_FILE = path.join(__dirname, "noted-episode-455006-t1-182476822152.json");
+// const SERVICE_ACCOUNT_KEY_FILE = path.join(__dirname, "noted-episode-455006-t1-182476822152.json");
 
 if (!CROP_HEALTH_API_KEY || !GEMINI_API_KEY) {
   console.error(" Missing API Key(s)! Check your .env file.");
@@ -52,17 +52,19 @@ const encodeImageToBase64 = (filePath) => {
 // Google Earth Engine (GEE) Initialization
 async function initializeGEE() {
   try {
-    console.log("Authenticating with Google Earth Engine...");
-    const privateKey = require(SERVICE_ACCOUNT_KEY_FILE);
+    console.log('🔐 Parsing GOOGLE_CREDENTIALS...');
+    const privateKey = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+
+    console.log('🔑 Authenticating with Google Earth Engine...');
     await ee.data.authenticateViaPrivateKey(privateKey, async () => {
       ee.initialize(null, null, () => {
-        console.log("Google Earth Engine Initialized Successfully");
+        console.log('✅ Google Earth Engine Initialized Successfully');
       }, (err) => {
-        console.error(" GEE Initialization Failed:", err);
+        console.error('❌ GEE Initialization Failed:', err);
       });
     });
   } catch (error) {
-    console.error(" Error initializing GEE:", error);
+    console.error('❌ Error initializing GEE:', error);
   }
 }
 initializeGEE();
