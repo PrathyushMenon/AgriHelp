@@ -52,7 +52,7 @@ const encodeImageToBase64 = (filePath) => {
 // Google Earth Engine (GEE) Initialization
 async function initializeGEE() {
   try {
-    console.log("🔑 Authenticating with Google Earth Engine...");
+    console.log("Authenticating with Google Earth Engine...");
     const privateKey = require(SERVICE_ACCOUNT_KEY_FILE);
     await ee.data.authenticateViaPrivateKey(privateKey, async () => {
       ee.initialize(null, null, () => {
@@ -100,7 +100,7 @@ app.post("/analyze", (req, res) => {
     req.pipe(writeStream);
 
     writeStream.on("finish", async () => {
-      console.log("📸 Received file:", tempFilePath);
+      console.log(" Received file:", tempFilePath);
 
       // 2) Encode to Base64
       const base64Image = encodeImageToBase64(tempFilePath);
@@ -417,5 +417,5 @@ app.post("/translate", async (req, res) => {
 // Start Server
 const port = process.env.PORT || 5000; // Use Render's port or fallback to 5000 locally
 app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
