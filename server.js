@@ -24,7 +24,7 @@ app.use(fileUpload());
 app.use(express.json()); // To parse JSON payloads
 
 
-// ✅ API Keys & Environment Variables
+// API Keys & Environment Variables
 const CROP_HEALTH_API_URL = "https://crop.kindwise.com/api/v1/identification";
 const CROP_HEALTH_API_KEY = process.env.CROP_HEALTH_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -32,43 +32,43 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const SERVICE_ACCOUNT_KEY_FILE = path.join(__dirname, "noted-episode-455006-t1-182476822152.json");
 
 if (!CROP_HEALTH_API_KEY || !GEMINI_API_KEY) {
-  console.error("❌ Missing API Key(s)! Check your .env file.");
+  console.error(" Missing API Key(s)! Check your .env file.");
   process.exit(1);
 }
 
-// ✅ Multer: Image Upload Configuration
+// ulter: Image Upload Configuration
 const upload = multer({ dest: "uploads/" });
 
-// ✅ Convert Image to Base64
+// Convert Image to Base64
 const encodeImageToBase64 = (filePath) => {
   try {
     const imageBuffer = fs.readFileSync(filePath);
     return imageBuffer.toString("base64");
   } catch (error) {
-    console.error("❌ Error reading file:", error);
+    console.error(" Error reading file:", error);
     return null;
   }
 };
 
-// ✅ Google Earth Engine (GEE) Initialization
+// Google Earth Engine (GEE) Initialization
 async function initializeGEE() {
   try {
     console.log("🔑 Authenticating with Google Earth Engine...");
     const privateKey = require(SERVICE_ACCOUNT_KEY_FILE);
     await ee.data.authenticateViaPrivateKey(privateKey, async () => {
       ee.initialize(null, null, () => {
-        console.log("✅ Google Earth Engine Initialized Successfully");
+        console.log("Google Earth Engine Initialized Successfully");
       }, (err) => {
-        console.error("❌ GEE Initialization Failed:", err);
+        console.error(" GEE Initialization Failed:", err);
       });
     });
   } catch (error) {
-    console.error("❌ Error initializing GEE:", error);
+    console.error(" Error initializing GEE:", error);
   }
 }
 initializeGEE();
 
-// ✅ Fetch Disease Information using Google Gemini API
+// Fetch Disease Information using Google Gemini API
 const fetchDiseaseInfo = async (diseaseName) => {
   try {
     const response = await axios.post(
@@ -80,12 +80,12 @@ const fetchDiseaseInfo = async (diseaseName) => {
     );
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No additional info available.";
   } catch (error) {
-    console.error(`❌ Error fetching details for ${diseaseName}:`, error.response?.data || error.message);
+    console.error(` Error fetching details for ${diseaseName}:`, error.response?.data || error.message);
     return "Failed to fetch details.";
   }
 };
 
-// ✅ Disease Analysis Route (unchanged)
+// Disease Analysis Route
 app.post("/analyze", (req, res) => {
   try {
     // 1) Save incoming image to temp file
@@ -141,17 +141,17 @@ app.post("/analyze", (req, res) => {
 
       // 7) Clean up temp file
       fs.unlink(tempFilePath, err => {
-        if (err) console.error("❌ Failed to delete file:", err);
+        if (err) console.error(" Failed to delete file:", err);
         else console.log("🗑️ Deleted:", tempFilePath);
       });
     });
   } catch (error) {
-    console.error("❌ API Request Error:", error.response?.data || error.message);
+    console.error(" API Request Error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to analyze image", details: error.message });
   }
 });
 
-// ✅ Fetch GEE Weather & Soil Data Route
+// Fetch GEE Weather & Soil Data Route
 app.get("/weather", async (req, res) => {
   const { lat, lon } = req.query;
   if (!lat || !lon) {
@@ -162,28 +162,28 @@ app.get("/weather", async (req, res) => {
     console.log(`📡 Fetching GEE data for (${lat}, ${lon})...`);
     const point = ee.Geometry.Point([parseFloat(lon), parseFloat(lat)]);
 
-    // ✅ NDVI using Landsat 8
+    // NDVI using Landsat 8
     const landsatCollection = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA")
       .filterBounds(point)
       .filterDate("2024-01-25", "2024-03-05")
       .map((image) => image.addBands(image.normalizedDifference(["B5", "B4"]).rename("NDVI")));
     const ndviImage = landsatCollection.mean();
 
-    // ✅ Real-Time **Topsoil** Moisture using NASA SMAP
+    // Real-Time Topsoil Moisture using NASA SMAP
     const soilMoistureDataset = ee.ImageCollection("NASA/SMAP/SPL3SMP_E/006")
       .filterBounds(point)
       .filterDate("2024-01-28", "2024-03-02")
       .select("soil_moisture_am") 
       .mean();
 
-    // ✅ Rainfall using CHIRPS
+    //  Rainfall using CHIRPS
     const rainfallDataset = ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
       .filterBounds(point)
       .filterDate("2024-03-01", "2024-03-02")
       .select("precipitation")
       .mean();
 
-    // 🌿 Reduce region values
+    //  Reduce region values
     const ndviValue = ndviImage.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 30, maxPixels: 1e9 });
     const soilMoistureValue = soilMoistureDataset.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 9000, maxPixels: 1e9 });
     const rainfallValue = rainfallDataset.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 5000, maxPixels: 1e9 });
@@ -198,9 +198,9 @@ app.get("/weather", async (req, res) => {
       rainfall: rainfall.precipitation ? rainfall.precipitation.toFixed(4) + " mm" : "No Data",
     };
 
-    console.log("✅ Final Weather Data:", weatherData);
+    console.log("Final Weather Data:", weatherData);
 
-    // 🔍 **Get Farming Advice from Gemini API**
+    //  Get Farming Advice from Gemini API
     let farmingAdvice = { english: "⚠️ No English advice available.", hindi: "⚠️ No Hindi advice available." };
 
     try {
@@ -214,9 +214,9 @@ app.get("/weather", async (req, res) => {
               parts: [
                 {
                   text: `Given the following weather conditions:
-- 🌧️ Rainfall: ${weatherData.rainfall}
-- 🌿 NDVI: ${weatherData.ndvi}
-- 🌱 Soil Moisture (Top 0-7cm): ${weatherData.soil_moisture_top}
+- Rainfall: ${weatherData.rainfall}
+- NDVI: ${weatherData.ndvi}
+- Soil Moisture (Top 0-7cm): ${weatherData.soil_moisture_top}
 
 Provide **farming advice in Hindi first, followed by English.**
 
@@ -251,7 +251,7 @@ According to the weather information, rainfall data is unavailable, the NDVI is 
       console.log("Gemini Response:", adviceResponse?.data);
       const adviceText = adviceResponse?.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (adviceText) {
-        console.log("📜 Raw Advice Text from Gemini:", adviceText);
+        console.log(" Raw Advice Text from Gemini:", adviceText);
         const hindiMatch = adviceText.match(/Hindi\s*[:]*\s*([\s\S]+?)(?=\s*English:|$)/i);
         const englishMatch = adviceText.match(/English\s*[:]*\s*([\s\S]+)/i);
 
@@ -265,21 +265,21 @@ According to the weather information, rainfall data is unavailable, the NDVI is 
         console.log("No raw advice text found.");
       }
     } catch (geminiError) {
-      console.error("❌ Gemini API Error:", geminiError.response?.data || geminiError.message);
+      console.error(" Gemini API Error:", geminiError.response?.data || geminiError.message);
     }
 
     console.log("Sending Response:", { ...weatherData, advice: farmingAdvice });
     res.json({ ...weatherData, advice: farmingAdvice });
 
   } catch (error) {
-    console.error("❌ GEE Processing Error:", error.message);
+    console.error(" GEE Processing Error:", error.message);
     res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
 
 
 
-// 🌤️ Route to fetch 7-day weather forecast
+//  Route to fetch 7-day weather forecast
 app.get("/forecast", async (req, res) => {
   try {
       const { lat, lon } = req.query;
@@ -315,11 +315,11 @@ app.get("/forecast", async (req, res) => {
   }
 });
 
-// 📤 Speech-to-Text API
+// Speech-to-Text API
 app.post("/speech-to-text", async (req, res) => {
   try {
     if (!req.files || !req.files.audio) {
-      return res.status(400).send("❌ Audio file is required");
+      return res.status(400).send(" Audio file is required");
     }
 
     const audioBuffer = req.files.audio.data; // Get audio file buffer
@@ -344,15 +344,15 @@ app.post("/speech-to-text", async (req, res) => {
       ?.map((r) => r.alternatives[0].transcript)
       .join("\n");
 
-    console.log("🎧 Transcribed:", transcription);
+    console.log("Transcribed:", transcription);
     res.send({ transcription });
   } catch (err) {
-    console.error("❌ STT error:", err.response?.data || err.message);
-    res.status(500).send("❌ Speech-to-Text failed");
+    console.error(" STT error:", err.response?.data || err.message);
+    res.status(500).send(" Speech-to-Text failed");
   }
 });
 
-// 🌱 Gemini AI Help API
+// Gemini AI Help API
 app.post("/gemini-advice", async (req, res) => {
   try {
     const { text } = req.body;
@@ -377,11 +377,11 @@ app.post("/gemini-advice", async (req, res) => {
     );
     
 
-    const aiReply = geminiRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ Gemini didn't reply";
+    const aiReply = geminiRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text || " Gemini didn't reply";
 
     res.send({ advice: aiReply });
   } catch (error) {
-    console.error("❌ Gemini API Error:", error.response?.data || error.message);
+    console.error(" Gemini API Error:", error.response?.data || error.message);
     res.status(500).send({ error: "Gemini API error" });
   }
 });
@@ -410,12 +410,13 @@ app.post("/translate", async (req, res) => {
     const translatedText = response.data.data.translations[0].translatedText;
     res.json({ translatedText });
   } catch (error) {
-    console.error("❌ Error translating text:", error.response?.data || error.message);
+    console.error(" Error translating text:", error.response?.data || error.message);
     res.status(500).json({ error: "Translation failed." });
   }
 });
 
-// ✅ Start Server
-app.listen(port, () => {
-  console.log(`🚀 Server running on http://192.168.0.170:${port}`);
+// Start Server
+const port = process.env.PORT || 5000; // Use Render's port or fallback to 5000 locally
+app.listen(port, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${port}`);
 });
