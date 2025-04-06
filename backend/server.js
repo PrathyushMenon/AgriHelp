@@ -82,90 +82,6 @@ async function initializeGEE() {
 
 initializeGEE();
 
-
-// Fetch Disease Information using Google Gemini API
-const fetchDiseaseInfo = async (diseaseName) => {
-  try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{ parts: [{ text: `Provide a brief summary of ${diseaseName}, its causes, and treatments.keep it a simple text file witout bold or size changes` }] }],
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
-    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No additional info available.";
-  } catch (error) {
-    console.error(` Error fetching details for ${diseaseName}:`, error.response?.data || error.message);
-    return "Failed to fetch details.";
-  }
-};
-
-// Disease Analysis Route
-app.post("/analyze", (req, res) => {
-  try {
-    // 1) Save incoming image to temp file
-    const tempFilePath = path.join(__dirname, "uploads", `temp-${Date.now()}.jpg`);
-    const dir = path.dirname(tempFilePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const writeStream = fs.createWriteStream(tempFilePath);
-    writeStream.on("error", err => {
-      console.error("Error writing file:", err);
-      return res.status(500).json({ error: "Failed to save uploaded file" });
-    });
-    req.pipe(writeStream);
-
-    writeStream.on("finish", async () => {
-      console.log(" Received file:", tempFilePath);
-
-      // 2) Encode to Base64
-      const base64Image = encodeImageToBase64(tempFilePath);
-      if (!base64Image) {
-        return res.status(500).json({ error: "Failed to process image" });
-      }
-
-      // 3) Call Crop Health API
-      const apiResponse = await axios.post(
-        CROP_HEALTH_API_URL,
-        { images: [base64Image], latitude: null, longitude: null, similar_images: true },
-        { headers: { "Api-Key": CROP_HEALTH_API_KEY, "Content-Type": "application/json" } }
-      );
-
-      // 4) Extract, sort & limit to top 4 diseases
-      let suggestions = apiResponse.data?.result?.disease?.suggestions || [];
-      suggestions = suggestions
-        .sort((a, b) => b.probability - a.probability)
-        .slice(0, 4);
-
-      // 5) For each disease, fetch a summary from Gemini
-      const formattedDiseases = await Promise.all(
-        suggestions.map(async (d) => {
-          const summary = await fetchDiseaseInfo(d.name);
-          return {
-            id: d.id || String(Math.random()),
-            name: d.name || "Unknown Disease",
-            probability: d.probability || 0,
-            scientific_name: d.scientific_name || null,
-            summary
-          };
-        })
-      );
-
-      // 6) Respond with only the fields we want
-      res.json({ result: { diseases: formattedDiseases } });
-
-      // 7) Clean up temp file
-      fs.unlink(tempFilePath, err => {
-        if (err) console.error(" Failed to delete file:", err);
-        else console.log("🗑️ Deleted:", tempFilePath);
-      });
-    });
-  } catch (error) {
-    console.error(" API Request Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to analyze image", details: error.message });
-  }
-});
-
 // Fetch GEE Weather & Soil Data Route
 app.get("/weather", async (req, res) => {
   const { lat, lon } = req.query;
@@ -183,41 +99,52 @@ app.get("/weather", async (req, res) => {
     const landsatCollection = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA")
       .filterBounds(point)
       .filterDate("2024-01-25", "2024-03-05");
-    console.log("Filtered Landsat Collection Count:", await landsatCollection.size().getInfo());
-
-    if (await landsatCollection.size().getInfo() > 0) {
+    
+    // Check if Landsat collection has data
+    const landsatCount = await landsatCollection.size().getInfo();
+    console.log("Landsat Collection Count:", landsatCount);
+    
+    if (landsatCount > 0) {
       const ndviImage = landsatCollection.map((image) => image.addBands(image.normalizedDifference(["B5", "B4"]).rename("NDVI")));
       const ndviMean = ndviImage.mean();
       const ndviValue = await ndviMean.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 30, maxPixels: 1e9 }).getInfo();
       console.log("NDVI Value:", ndviValue);
     } else {
-      console.error("No data in Landsat collection for the given date and location.");
+      console.error("No data found in Landsat collection for the given date and location.");
     }
 
     // Real-Time Topsoil Moisture using NASA SMAP
     const soilMoistureDataset = ee.ImageCollection("NASA/SMAP/SPL3SMP_E/006")
       .filterBounds(point)
       .filterDate("2024-01-28", "2024-03-02");
-    console.log("Filtered Soil Moisture Dataset Count:", await soilMoistureDataset.size().getInfo());
+    
+    // Check if soil moisture dataset has data
+    const soilMoistureCount = await soilMoistureDataset.size().getInfo();
+    console.log("Soil Moisture Dataset Count:", soilMoistureCount);
 
-    if (await soilMoistureDataset.size().getInfo() > 0) {
-      const soilMoistureValue = await soilMoistureDataset.mean().reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 9000, maxPixels: 1e9 }).getInfo();
+    if (soilMoistureCount > 0) {
+      const soilMoistureMean = soilMoistureDataset.mean();
+      const soilMoistureValue = await soilMoistureMean.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 9000, maxPixels: 1e9 }).getInfo();
       console.log("Soil Moisture Value:", soilMoistureValue);
     } else {
-      console.error("No data in Soil Moisture dataset for the given date and location.");
+      console.error("No data found in Soil Moisture dataset for the given date and location.");
     }
 
     // Rainfall using CHIRPS
     const rainfallDataset = ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
       .filterBounds(point)
       .filterDate("2024-03-01", "2024-03-02");
-    console.log("Filtered Rainfall Dataset Count:", await rainfallDataset.size().getInfo());
+    
+    // Check if rainfall dataset has data
+    const rainfallCount = await rainfallDataset.size().getInfo();
+    console.log("Rainfall Dataset Count:", rainfallCount);
 
-    if (await rainfallDataset.size().getInfo() > 0) {
-      const rainfallValue = await rainfallDataset.mean().reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 5000, maxPixels: 1e9 }).getInfo();
+    if (rainfallCount > 0) {
+      const rainfallMean = rainfallDataset.mean();
+      const rainfallValue = await rainfallMean.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 5000, maxPixels: 1e9 }).getInfo();
       console.log("Rainfall Value:", rainfallValue);
     } else {
-      console.error("No data in Rainfall dataset for the given date and location.");
+      console.error("No data found in Rainfall dataset for the given date and location.");
     }
 
     // Farming advice from Gemini API
