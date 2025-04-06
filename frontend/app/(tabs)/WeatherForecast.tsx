@@ -42,7 +42,7 @@ const WeatherForecast: React.FC = () => {
         let location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
 
-        console.log("✅ Got location:", latitude, longitude);
+        console.log("Got location:", latitude, longitude);
 
         // 🌍 Fetch weather data from backend
         const API_URL = "https://agrihelp-backend.onrender.com/"; // Change to your backend IP
@@ -50,16 +50,16 @@ const WeatherForecast: React.FC = () => {
           params: { lat: latitude, lon: longitude },
         });
 
-        console.log("✅ Forecast API Response:", response.data);
+        console.log("Forecast API Response:", response.data);
 
         if (response.status === 200 && response.data.forecast) {
           setForecast(response.data.forecast);
         } else {
-          throw new Error("❌ Failed to fetch forecast.");
+          throw new Error(" Failed to fetch forecast.");
         }
       } catch (error) {
         console.error("Error fetching forecast:", error);
-        setError("⚠️ Could not fetch forecast data.");
+        setError("Could not fetch forecast data.");
       } finally {
         setLoading(false);
       }
@@ -89,20 +89,20 @@ const WeatherForecast: React.FC = () => {
               <Text style={styles.date}>{item.date}</Text>
 
               <View style={styles.weatherDetails}>
-                {/* 🌡 Temperature */}
+                {/*  Temperature */}
                 <View style={styles.weatherItem}>
                   <Feather name="thermometer" size={20} color="#FF5733" />
                   <Text style={styles.weatherText}>Max: {item.max_temp}°C</Text>
                   <Text style={styles.weatherText}>Min: {item.min_temp}°C</Text>
                 </View>
 
-                {/* 🌧️ Rain */}
+                {/* Rain */}
                 <View style={styles.weatherItem}>
                   <Feather name="cloud-rain" size={20} color="#3498DB" />
                   <Text style={styles.weatherText}>Rain: {item.precipitation} mm</Text>
                 </View>
 
-                {/* 💨 Wind */}
+                {/*  Wind */}
                 <View style={styles.weatherItem}>
                   <Feather name="wind" size={20} color="#2F9E44" />
                   <Text style={styles.weatherText}>Wind: {item.wind_speed} km/h</Text>
@@ -117,7 +117,7 @@ const WeatherForecast: React.FC = () => {
   );
 };
 
-// 🎨 Styles
+// Styles
 const styles = StyleSheet.create({
   background: {
     flex: 1,
