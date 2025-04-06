@@ -17,8 +17,8 @@ import { MaterialCommunityIcons, Ionicons, FontAwesome5, Feather, MaterialIcons 
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
-import AppNavigator from './AppNavigator';  // Your navigator component (adjust path as necessary)
-import { useRouter } from 'expo-router'; // Correct import
+import AppNavigator from './AppNavigator';  //  navigator component
+import { useRouter } from 'expo-router';
 import { Button } from 'react-native';
 import { useLink } from 'expo-router';
 import { Link } from 'expo-router'; // Import Link for navigation
@@ -81,8 +81,6 @@ const translations = {
 const HomePage = () => {
   // This function will handle feature press and navigate to a screen
   const handleFeaturePress = (screenName: string) => {
-    // If you're trying to navigate to 'home', remove it or change it to an existing route
-    // We don't need `router.push()` here in expo-router, instead, we use Link or `href`
     return <Link href={`/${screenName}`} />;
   };
   
@@ -115,7 +113,6 @@ const HomePage = () => {
       const data = await response.json();
       
       // Map Open-Meteo weather code to conditions
-      // https://open-meteo.com/en/docs for weather code reference
       const getWeatherCondition = (code) => {
         if (code <= 3) return 'Clear';
         if (code >= 45 && code <= 48) return 'Fog';
