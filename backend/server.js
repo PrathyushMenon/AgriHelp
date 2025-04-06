@@ -28,14 +28,19 @@ const CROP_HEALTH_API_URL = "https://crop.kindwise.com/api/v1/identification";
 const CROP_HEALTH_API_KEY = process.env.CROP_HEALTH_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;// Access the service account key stored as an environment variable (the content of the JSON file)
+// Access the secret stored in the environment variable
 const SERVICE_ACCOUNT_KEY_JSON = process.env.SERVICE_ACCOUNT_KEY_FILE;
 
 if (!SERVICE_ACCOUNT_KEY_JSON) {
     throw new Error('Google Earth Engine service account credentials not found in environment');
 }
 
-// Parse the JSON content (if it's stored as a JSON string in the environment variable)
+// Parse the JSON content
 const credentials = JSON.parse(SERVICE_ACCOUNT_KEY_JSON);
+console.log(process.env.SERVICE_ACCOUNT_KEY_FILE);  // Check if the secret is accessible
+
+// Now use the credentials
+console.log('Credentials loaded:', credentials);
 
 if (!CROP_HEALTH_API_KEY || !GEMINI_API_KEY) {
   console.error(" Missing API Key(s)! Check your .env file.");
