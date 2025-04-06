@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import * as Location from "expo-location";
-import { Feather } from "@expo/vector-icons"; // 🔥 Icons for a better UI
+import { Feather } from "@expo/vector-icons"; 
 import { useNavigation } from '@react-navigation/native';
 
 
@@ -45,7 +45,7 @@ const WeatherForecast: React.FC = () => {
         console.log("✅ Got location:", latitude, longitude);
 
         // 🌍 Fetch weather data from backend
-        const API_URL = "http://192.168.0.170:5000"; // Change to your backend IP
+        const API_URL = "https://agrihelp-backend.onrender.com/"; // Change to your backend IP
         const response = await axios.get(`${API_URL}/forecast`, {
           params: { lat: latitude, lon: longitude },
         });
