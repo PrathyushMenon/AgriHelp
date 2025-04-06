@@ -57,10 +57,10 @@ const translations = {
     title: "🎙️ Ask Your Farming Question",
     start: "🎤 Start Recording",
     stop: "⏹ Stop Recording",
-    error: "❌ Error",
+    error: " Error",
     response: "🤖 Response",
     loading: "Loading...",
-    noResponse: "❌ No response received.",
+    noResponse: " No response received.",
     switchToHindi: "हिंदी में स्विच करें",
     switchToEnglish: "Switch to English",
   },
@@ -68,10 +68,10 @@ const translations = {
     title: "🎙️ अपने खेती के सवाल पूछें",
     start: "🎤 रिकॉर्डिंग शुरू करें",
     stop: "⏹ रिकॉर्डिंग बंद करें",
-    error: "❌ त्रुटि",
+    error: " त्रुटि",
     response: "🤖 उत्तर",
     loading: "लोड हो रहा है...",
-    noResponse: "❌ कोई उत्तर नहीं मिला।",
+    noResponse: " कोई उत्तर नहीं मिला।",
     switchToHindi: "अंग्रेजी में स्विच करें",
     switchToEnglish: "Switch to English",
   },
@@ -94,7 +94,7 @@ const VoiceAssistant: React.FC = () => {
       const { status } = await Audio.requestPermissionsAsync();
       return status === "granted";
     } catch (error) {
-      console.error("❌ Error requesting microphone permission:", error);
+      console.error(" Error requesting microphone permission:", error);
       return false;
     }
   };
