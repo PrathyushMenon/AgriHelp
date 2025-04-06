@@ -41,7 +41,7 @@ if (!SERVICE_ACCOUNT_KEY_JSON) {
 let credentials;
 try {
     credentials = JSON.parse(SERVICE_ACCOUNT_KEY_JSON);
-    console.log('Credentials loaded:', credentials); // Log the credentials (in development only)
+    console.log('Credentials loaded:'); // Log the credentials (in development only)
 } catch (err) {
     console.error('Error parsing service account JSON:', err);
     process.exit(1);
@@ -169,6 +169,8 @@ app.post("/analyze", (req, res) => {
 // Fetch GEE Weather & Soil Data Route
 app.get("/weather", async (req, res) => {
   const { lat, lon } = req.query;
+
+  // Validate input
   if (!lat || !lon) {
     return res.status(400).json({ error: "Latitude and Longitude required" });
   }
@@ -180,42 +182,45 @@ app.get("/weather", async (req, res) => {
     // NDVI using Landsat 8
     const landsatCollection = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA")
       .filterBounds(point)
-      .filterDate("2024-01-25", "2024-03-05")
-      .map((image) => image.addBands(image.normalizedDifference(["B5", "B4"]).rename("NDVI")));
-    const ndviImage = landsatCollection.mean();
+      .filterDate("2024-01-25", "2024-03-05");
+    console.log("Filtered Landsat Collection Count:", await landsatCollection.size().getInfo());
+
+    if (await landsatCollection.size().getInfo() > 0) {
+      const ndviImage = landsatCollection.map((image) => image.addBands(image.normalizedDifference(["B5", "B4"]).rename("NDVI")));
+      const ndviMean = ndviImage.mean();
+      const ndviValue = await ndviMean.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 30, maxPixels: 1e9 }).getInfo();
+      console.log("NDVI Value:", ndviValue);
+    } else {
+      console.error("No data in Landsat collection for the given date and location.");
+    }
 
     // Real-Time Topsoil Moisture using NASA SMAP
     const soilMoistureDataset = ee.ImageCollection("NASA/SMAP/SPL3SMP_E/006")
       .filterBounds(point)
-      .filterDate("2024-01-28", "2024-03-02")
-      .select("soil_moisture_am") 
-      .mean();
+      .filterDate("2024-01-28", "2024-03-02");
+    console.log("Filtered Soil Moisture Dataset Count:", await soilMoistureDataset.size().getInfo());
 
-    //  Rainfall using CHIRPS
+    if (await soilMoistureDataset.size().getInfo() > 0) {
+      const soilMoistureValue = await soilMoistureDataset.mean().reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 9000, maxPixels: 1e9 }).getInfo();
+      console.log("Soil Moisture Value:", soilMoistureValue);
+    } else {
+      console.error("No data in Soil Moisture dataset for the given date and location.");
+    }
+
+    // Rainfall using CHIRPS
     const rainfallDataset = ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
       .filterBounds(point)
-      .filterDate("2024-03-01", "2024-03-02")
-      .select("precipitation")
-      .mean();
+      .filterDate("2024-03-01", "2024-03-02");
+    console.log("Filtered Rainfall Dataset Count:", await rainfallDataset.size().getInfo());
 
-    //  Reduce region values
-    const ndviValue = ndviImage.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 30, maxPixels: 1e9 });
-    const soilMoistureValue = soilMoistureDataset.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 9000, maxPixels: 1e9 });
-    const rainfallValue = rainfallDataset.reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 5000, maxPixels: 1e9 });
+    if (await rainfallDataset.size().getInfo() > 0) {
+      const rainfallValue = await rainfallDataset.mean().reduceRegion({ reducer: ee.Reducer.mean(), geometry: point, scale: 5000, maxPixels: 1e9 }).getInfo();
+      console.log("Rainfall Value:", rainfallValue);
+    } else {
+      console.error("No data in Rainfall dataset for the given date and location.");
+    }
 
-    const ndvi = await ndviValue.getInfo();
-    const soilMoisture = await soilMoistureValue.getInfo();
-    const rainfall = await rainfallValue.getInfo();
-
-    const weatherData = {
-      ndvi: ndvi.NDVI != null ? ndvi.NDVI.toFixed(4) : "No Data",
-      soil_moisture_top: soilMoisture.soil_moisture_am != null ? soilMoisture.soil_moisture_am.toFixed(4) : "No Data",
-      rainfall: rainfall.precipitation ? rainfall.precipitation.toFixed(4) + " mm" : "No Data",
-    };
-
-    console.log("Final Weather Data:", weatherData);
-
-    //  Get Farming Advice from Gemini API
+    // Farming advice from Gemini API
     let farmingAdvice = { english: "⚠️ No English advice available.", hindi: "⚠️ No Hindi advice available." };
 
     try {
@@ -229,9 +234,9 @@ app.get("/weather", async (req, res) => {
               parts: [
                 {
                   text: `Given the following weather conditions:
-- Rainfall: ${weatherData.rainfall}
-- NDVI: ${weatherData.ndvi}
-- Soil Moisture (Top 0-7cm): ${weatherData.soil_moisture_top}
+- Rainfall: ${rainfallValue?.precipitation || 'No Data'}
+- NDVI: ${ndviValue?.NDVI || 'No Data'}
+- Soil Moisture (Top 0-7cm): ${soilMoistureValue?.soil_moisture_am || 'No Data'}
 
 Provide **farming advice in Hindi first, followed by English.**
 
@@ -291,8 +296,6 @@ According to the weather information, rainfall data is unavailable, the NDVI is 
     res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
-
-
 
 //  Route to fetch 7-day weather forecast
 app.get("/forecast", async (req, res) => {
