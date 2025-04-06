@@ -5,7 +5,7 @@ import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { useNavigation } from '@react-navigation/native';
 
-const SERVER_URL = "http://192.168.0.170:5000"; // Make sure this is correct
+const SERVER_URL = "https://agrihelp-backend.onrender.com"; 
 
 // State Interface
 interface State {
