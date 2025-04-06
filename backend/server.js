@@ -82,7 +82,7 @@ async function initializeGEE() {
 
 initializeGEE();
 
-// ✅ Fetch Disease Information using Google Gemini API
+// Fetch Disease Information using Google Gemini API
 const fetchDiseaseInfo = async (diseaseName) => {
   try {
     const response = await axios.post(
@@ -99,7 +99,7 @@ const fetchDiseaseInfo = async (diseaseName) => {
   }
 };
 
-//Disease Analysis Route
+// Disease Analysis Route
 app.post("/analyze", (req, res) => {
   try {
     // 1) Save incoming image to temp file
