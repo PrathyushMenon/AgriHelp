@@ -45,7 +45,7 @@ const WeatherForecast: React.FC = () => {
         console.log("Got location:", latitude, longitude);
 
         // Fetch weather data from backend
-        const API_URL = "https://agrihelp-backend.onrender.com/";
+        const API_URL = "https://agrihelp-backend.onrender.com";
         const response = await axios.get(`${API_URL}/forecast`, {
           params: { lat: latitude, lon: longitude },
         });
