@@ -63,14 +63,14 @@ const ScanScreen: React.FC = () => {
       }
 
       const data = await apiResponse.json();
-      console.log("📊 Analysis Result:", data);
+      console.log("Analysis Result:", data);
 
       navigation.navigate("analysis", {
         analysisData: data,
         imageUri,
       });
     } catch (error: any) {
-      console.error("❌ Upload Error:", error);
+      console.error(" Upload Error:", error);
       Alert.alert("Upload Failed", error.message);
     } finally {
       setIsUploading(false);
