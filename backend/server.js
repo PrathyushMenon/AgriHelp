@@ -55,6 +55,7 @@ if (!CROP_HEALTH_API_KEY || !GEMINI_API_KEY) {
 
 console.log('API Keys and credentials are successfully loaded and ready to use!');
 
+
 // ulter: Image Upload Configuration
 const upload = multer({ dest: "uploads/" });
 
@@ -69,29 +70,19 @@ const encodeImageToBase64 = (filePath) => {
   }
 };
 
-//  Google Earth Engine (GEE) Initialization
+// Now, use the credentials to authenticate with Google Earth Engine
+const ee = require('@google/earthengine'); // Ensure you have installed the Earth Engine Node.js client
+
 async function initializeGEE() {
-  try {
-    console.log("Authenticating with Google Earth Engine...");
-    ee.data.authenticateViaPrivateKey(fs.readFileSync(SERVICE_ACCOUNT_KEY_FILE), () => {
-      ee.initialize(null, null, () => {
-        console.log(" Google Earth Engine Initialized Successfully");
-      }, (err) => {
-        console.error("GEE Initialization Failed:", err);
-      });
-    });
-    const privateKey = require(SERVICE_ACCOUNT_KEY_FILE);
-    await ee.data.authenticateViaPrivateKey(privateKey, async () => {
-      ee.initialize(null, null, () => {
-        console.log(" Google Earth Engine Initialized Successfully");
-      }, (err) => {
-        console.error(" GEE Initialization Failed:", err);
-      });
-    });
-  } catch (error) {
-    console.error("Error initializing GEE:", error);
-  }
+    try {
+        await ee.data.authenticateViaPrivateKey(credentials); // Authenticate using the credentials
+        console.log('Successfully authenticated with Google Earth Engine!');
+    } catch (error) {
+        console.error('Error initializing GEE:', error);
+        process.exit(1);
+    }
 }
+
 initializeGEE();
 
 
