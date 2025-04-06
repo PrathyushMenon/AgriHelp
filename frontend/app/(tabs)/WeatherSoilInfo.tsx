@@ -34,7 +34,7 @@ const WeatherSoilInfo: React.FC = () => {
 
         console.log("Location acquired:", latitude, longitude);
 
-        const API_URL = "http://192.168.0.170:5000";
+        const API_URL = "https://agrihelp-backend.onrender.com/";
         const response = await axios.get(`${API_URL}/weather`, {
           params: { lat: latitude, lon: longitude },
         });
