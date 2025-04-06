@@ -33,10 +33,10 @@ const WeatherForecast: React.FC = () => {
       try {
         setLoading(true);
 
-        // 📍 Get User Location
+        // Get User Location
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
-          throw new Error("📍 Location permission denied. Please enable GPS.");
+          throw new Error("Location permission denied. Please enable GPS.");
         }
 
         let location = await Location.getCurrentPositionAsync({});
@@ -44,8 +44,8 @@ const WeatherForecast: React.FC = () => {
 
         console.log("Got location:", latitude, longitude);
 
-        // 🌍 Fetch weather data from backend
-        const API_URL = "https://agrihelp-backend.onrender.com/"; // Change to your backend IP
+        // Fetch weather data from backend
+        const API_URL = "https://agrihelp-backend.onrender.com/";
         const response = await axios.get(`${API_URL}/forecast`, {
           params: { lat: latitude, lon: longitude },
         });
