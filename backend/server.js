@@ -70,9 +70,6 @@ const encodeImageToBase64 = (filePath) => {
   }
 };
 
-// Now, use the credentials to authenticate with Google Earth Engine
-const ee = require('@google/earthengine'); // Ensure you have installed the Earth Engine Node.js client
-
 async function initializeGEE() {
     try {
         await ee.data.authenticateViaPrivateKey(credentials); // Authenticate using the credentials
