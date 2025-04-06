@@ -52,7 +52,7 @@ const ScanScreen: React.FC = () => {
       const response = await fetch(imageUri);
       const blob = await response.blob();
 
-      const apiResponse = await fetch("http://192.168.0.170:5000/analyze", {
+      const apiResponse = await fetch("https://agrihelp-backend.onrender.com/analyze", {
         method: "POST",
         body: blob,
         headers: { "Content-Type": "image/jpeg" },
